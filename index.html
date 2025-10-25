@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Yohaku | ホーム</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #000;
+      overflow: hidden;
+      touch-action: none;
+    }
+    /* フルスクリーン映像 */
+    .video-bg {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover; /* 画面を埋める */
+      object-position: center;
+      background: #000;
+    }
+    /* ロゴなど最小のUI */
+    .brand {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      color: #fff;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+      user-select: none;
+    }
+    /* 自動再生できない環境用の再生ボタン */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .overlay .cta {
+      pointer-events: auto;
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 16px;
+      border: 1px solid rgba(255,255,255,0.2);
+      backdrop-filter: blur(4px);
+      display: none; /* 必要時のみ表示 */
+    }
+
+    /* サウンドミキサーパネル */
+    .sound-mixer {
+      position: fixed;
+      top: 100%;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background: linear-gradient(180deg, #1a2942 0%, #0d1929 100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1000;
+      overflow-y: auto;
+      touch-action: none;
+    }
+    .sound-mixer.open {
+      transform: translateY(-100%);
+    }
+    .sound-mixer-header {
+      padding: 24px 20px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .search-box {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+    }
+    .search-icon {
+      width: 20px;
+      height: 20px;
+      opacity: 0.6;
+    }
+    .sound-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      padding: 24px 20px;
+    }
+    .sound-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .sound-button {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 48px;
+    }
+    .sound-button:active {
+      transform: scale(0.95);
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .sound-label {
+      color: #fff;
+      font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+    }
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 0 20px 24px;
+      overflow-x: auto;
+    }
+    .filter-tab {
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      border-radius: 20px;
+      color: #fff;
+      font-family: "Noto Sans JP", sans-serif;
+      font-size: 14px;
+      white-space: nowrap;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .filter-tab.active {
+      background: rgba(255, 255, 255, 0.15);
+    }
+  </style>
+</head>
+<body>
+  <video class="video-bg" autoplay muted loop playsinline>
+    <source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4" />
+    お使いのブラウザは動画再生に対応していません。
+  </video>
+  <div class="brand">Yohaku</div>
+  <div class="overlay"><button class="cta">タップして再生</button></div>
+
+  <!-- サウンドミキサーパネル -->
+  <div class="sound-mixer" id="soundMixer">
+    <div class="sound-mixer-header">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <span>サウンドミキサー</span>
+      </div>
+    </div>
+
+    <div class="sound-grid">
+      <div class="sound-item">
+        <button class="sound-button">🌧️</button>
+        <div class="sound-label">雨</div>
+      </div>
+      <div class="sound-item">
+        <button class="sound-button">🔥</button>
+        <div class="sound-label">焚き火</div>
+      </div>
+      <div class="sound-item">
+        <button class="sound-button">🌊</button>
+        <div class="sound-label">波</div>
+      </div>
+      <div class="sound-item">
+        <button class="sound-button">🌲</button>
+        <div class="sound-label">森の音</div>
+      </div>
+      <div class="sound-item">
+        <button class="sound-button">💨</button>
+        <div class="sound-label">風</div>
+      </div>
+      <div class="sound-item">
+        <button class="sound-button">🐦</button>
+        <div class="sound-label">鳥の声</div>
+      </div>
+      <div class="sound-item">
+        <button class="sound-button">⚡</button>
+        <div class="sound-label">雷</div>
+      </div>
+      <div class="sound-item">
+        <button class="sound-button">🔔</button>
+        <div class="sound-label">風鈴</div>
+      </div>
+      <div class="sound-item">
+        <button class="sound-button">☕</button>
+        <div class="sound-label">カフェ</div>
+      </div>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active">🎵 すべて</button>
+      <button class="filter-tab">⭐ 人気</button>
+      <button class="filter-tab">🌙 落ち着く</button>
+      <button class="filter-tab">💼 作業用</button>
+    </div>
+  </div>
+
+  <script>
+    const video = document.querySelector('.video-bg');
+    const cta = document.querySelector('.cta');
+
+    function tryPlay() {
+      const p = video.play();
+      if (p !== undefined) {
+        p.then(() => {
+          cta.style.display = 'none';
+        }).catch(() => {
+          // 自動再生がブロックされた場合はCTA表示
+          cta.style.display = 'inline-flex';
+        });
+      }
+    }
+
+    // 初期再生試行
+    window.addEventListener('load', tryPlay);
+
+    // iOS Safari等でユーザー操作が必要な場合
+    cta.addEventListener('click', () => {
+      video.muted = true; // 自動再生要件
+      tryPlay();
+    });
+
+    // バッテリー配慮：タブが非表示なら一時停止
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        video.pause();
+      } else {
+        tryPlay();
+      }
+    });
+
+    // サウンドミキサーのスワイプ機能
+    const soundMixer = document.getElementById('soundMixer');
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+
+    // タッチ/マウス開始
+    const handleStart = (clientY) => {
+      startY = clientY;
+      currentY = startY;
+      isDragging = true;
+      console.log('Drag started at Y:', startY);
+    };
+
+    // タッチ/マウス移動
+    const handleMove = (clientY) => {
+      if (!isDragging) return;
+
+      currentY = clientY;
+      const deltaY = currentY - startY;
+      console.log('Delta Y:', deltaY);
+
+      // 下方向にスワイプしてパネルを開く
+      if (deltaY > 0 && !soundMixer.classList.contains('open')) {
+        const progress = Math.min(deltaY / window.innerHeight, 1);
+        soundMixer.style.transition = 'none';
+        soundMixer.style.transform = `translateY(${-100 * progress}%)`;
+        console.log('Opening panel, progress:', progress);
+      }
+
+      // 上方向にスワイプしてパネルを閉じる
+      if (deltaY < 0 && soundMixer.classList.contains('open')) {
+        const progress = Math.max(1 + deltaY / window.innerHeight, 0);
+        soundMixer.style.transition = 'none';
+        soundMixer.style.transform = `translateY(${-100 * progress}%)`;
+        console.log('Closing panel, progress:', progress);
+      }
+    };
+
+    // タッチ/マウス終了
+    const handleEnd = () => {
+      if (!isDragging) return;
+      isDragging = false;
+
+      const deltaY = currentY - startY;
+      soundMixer.style.transition = '';
+      console.log('Drag ended, deltaY:', deltaY);
+
+      // 開く判定：50px以上下にスワイプ
+      if (deltaY > 50 && !soundMixer.classList.contains('open')) {
+        soundMixer.classList.add('open');
+        console.log('Panel opened');
+      }
+      // 閉じる判定：50px以上上にスワイプ
+      else if (deltaY < -50 && soundMixer.classList.contains('open')) {
+        soundMixer.classList.remove('open');
+        console.log('Panel closed');
+      }
+      // それ以外は元の状態に戻す
+      else {
+        soundMixer.style.transform = '';
+        console.log('Panel reset');
+      }
+    };
+
+    // タッチイベント（passiveをfalseにしてpreventDefaultを有効化）
+    document.addEventListener('touchstart', (e) => {
+      handleStart(e.touches[0].clientY);
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (e) => {
+      if (isDragging) {
+        e.preventDefault(); // ブラウザのデフォルトスクロールを防ぐ
+      }
+      handleMove(e.touches[0].clientY);
+    }, { passive: false });
+
+    document.addEventListener('touchend', handleEnd, { passive: false });
+
+    // マウスイベント（デスクトップテスト用）
+    document.addEventListener('mousedown', (e) => {
+      handleStart(e.clientY);
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      handleMove(e.clientY);
+    });
+
+    document.addEventListener('mouseup', handleEnd);
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Root ignores
+.DS_Store
+
+# Snapshots (large archives not needed in Git)
+snapshots/*.tar.gz
+
+# Node/Expo (mobile)
+mobile/node_modules/
+mobile/.expo/
+mobile/.cache/
+mobile/dist/
+mobile/.DS_Store
+mobile/npm-debug.log*
+mobile/yarn-error.log*
