@@ -71,3 +71,42 @@
   3) 以降はタグをプッシュすると自動でリリースが作成されます
 
 備考: 現状は `.github/release-on-tag.yml.example` として同梱しています。トークンの権限が整い次第、上記手順で `.github/workflows/` に移動してください。
+
+## 7. Git LFS 導入と運用
+- 目的: 大容量動画（`.mp4`）を Git LFS で管理し、通常の `git push` で安全に扱います。
+- トラッキング設定（済）: リポジトリ直下の `.gitattributes` に以下を追加済み。
+  ```gitattributes
+  mobile/assets/videos/*.mp4 filter=lfs diff=lfs merge=lfs -text
+  ```
+- インストール（macOS/Apple Silicon）:
+  - Homebrew がある場合:
+    ```sh
+    brew install git-lfs
+    ```
+  - Homebrew が無い場合: GitHub Releases から PKG をダウンロードしてインストール。
+    - 最新版: https://github.com/git-lfs/git-lfs/releases/latest
+    - 例（arm64）: `git-lfs-darwin-arm64-<version>.pkg`
+- 初期化（必須・一度だけ）:
+  ```sh
+  git lfs install
+  ```
+- 動作確認:
+  ```sh
+  git lfs version
+  git lfs status
+  ```
+- 既存動画のLFS化（安全策）:
+  - 対象ファイルを再追加してコミット:
+    ```sh
+    git add mobile/assets/videos/kesiki.mp4
+    git commit -m "lfs: convert kesiki.mp4"
+    git push
+    ```
+  - 履歴までLFSへ移行する場合（高度・要合意）:
+    ```sh
+    git lfs migrate import --include="mobile/assets/videos/*.mp4"
+    ```
+    注意: 履歴を書き換えるため、共同作業者との調整と強制プッシュが必要です。
+- 今後の運用:
+  - 新規動画は `mobile/assets/videos/` に配置し、通常通り `git add/commit/push` でOK（`.mp4`は自動でLFS対象）。
+  - GitHubへのプッシュは既存の `GITHUB_TOKEN` で問題ありません（LFSオブジェクトも同時にアップロードされます）。
