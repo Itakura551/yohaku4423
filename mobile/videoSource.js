@@ -1,0 +1,1 @@
+export default require('./assets/videos/kesiki.mp4');
