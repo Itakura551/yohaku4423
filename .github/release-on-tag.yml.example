@@ -1,0 +1,36 @@
+name: Release on tag
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare zip artifacts
+        run: |
+          mkdir -p artifacts
+          zip -r artifacts/yohaku-mobile.zip mobile -x "mobile/node_modules/*" "mobile/.expo/*" "mobile/.cache/*"
+          zip -r artifacts/yohaku-root.zip . -x \
+            ".git/*" \
+            "node_modules/*" \
+            "mobile/node_modules/*" \
+            "mobile/.expo/*" \
+            "mobile/.cache/*" \
+            "snapshots/*.tar.gz"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/yohaku-mobile.zip
+            artifacts/yohaku-root.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
