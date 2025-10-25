@@ -1,5 +1,6 @@
 # Root ignores
 .DS_Store
+vendor/
 
 # Snapshots (large archives not needed in Git)
 snapshots/*.tar.gz
