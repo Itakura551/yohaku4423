@@ -10,11 +10,11 @@ import {
   Dimensions,
   Easing,
   ScrollView,
-  Slider,
 } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
 import videoSource from './videoSource';
 
 // サウンドデータ
