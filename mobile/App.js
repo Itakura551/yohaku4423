@@ -9,11 +9,31 @@ import {
   TouchableOpacity,
   Dimensions,
   Easing,
+  ScrollView,
+  Slider,
 } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import videoSource from './videoSource';
+
+// サウンドデータ
+const SOUNDS = [
+  { id: 1, name: '雨', icon: '🌧️', category: '自然', color: '#4A90E2' },
+  { id: 2, name: '焚き火', icon: '🔥', category: '自然', color: '#E27755' },
+  { id: 3, name: '波', icon: '🌊', category: '自然', color: '#5AB9EA' },
+  { id: 4, name: '森の音', icon: '🌲', category: '自然', color: '#50C878' },
+  { id: 5, name: '風', icon: '💨', category: '自然', color: '#87CEEB' },
+  { id: 6, name: '鳥の声', icon: '🐦', category: '自然', color: '#FFD700' },
+  { id: 7, name: '雷', icon: '⚡', category: '自然', color: '#9B59B6' },
+  { id: 8, name: '風鈴', icon: '🔔', category: 'リラックス', color: '#E8B4B8' },
+  { id: 9, name: 'カフェ', icon: '☕', category: '集中', color: '#8B4513' },
+  { id: 10, name: 'ピアノ', icon: '🎹', category: 'リラックス', color: '#F0E68C' },
+  { id: 11, name: 'ホワイトノイズ', icon: '📻', category: '集中', color: '#CCCCCC' },
+  { id: 12, name: '川のせせらぎ', icon: '💧', category: '自然', color: '#00CED1' },
+];
+
+const CATEGORIES = ['すべて', '自然', 'リラックス', '集中'];
 
 export default function App() {
   const videoRef = React.useRef(null);
@@ -29,11 +49,18 @@ export default function App() {
   const downTranslate = React.useRef(new Animated.Value(-SCREEN_HEIGHT_LOCAL)).current;
   const [downVisible, setDownVisible] = React.useState(false);
 
+  // サウンドミキサーの状態管理
+  const [soundVolumes, setSoundVolumes] = React.useState(
+    SOUNDS.reduce((acc, sound) => ({ ...acc, [sound.id]: 0 }), {})
+  );
+  const [selectedCategory, setSelectedCategory] = React.useState('すべて');
+
   const showTimer = React.useCallback(() => {
     setTimerVisible(true);
-    Animated.timing(timerOpacity, {
+    Animated.spring(timerOpacity, {
       toValue: 1,
-      duration: 220,
+      friction: 8,
+      tension: 40,
       useNativeDriver: true,
     }).start();
   }, [timerOpacity]);
@@ -41,7 +68,8 @@ export default function App() {
   const hideTimer = React.useCallback(() => {
     Animated.timing(timerOpacity, {
       toValue: 0,
-      duration: 200,
+      duration: 250,
+      easing: Easing.bezier(0.4, 0, 0.6, 1),
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (finished) setTimerVisible(false);
@@ -54,13 +82,14 @@ export default function App() {
     Animated.parallel([
       Animated.timing(downOpacity, {
         toValue: 1,
-        duration: 240,
+        duration: 350,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         useNativeDriver: true,
       }),
-      Animated.timing(downTranslate, {
+      Animated.spring(downTranslate, {
         toValue: 0,
-        duration: 280,
-        easing: Easing.out(Easing.cubic),
+        friction: 9,
+        tension: 50,
         useNativeDriver: true,
       }),
     ]).start();
@@ -70,13 +99,14 @@ export default function App() {
     Animated.parallel([
       Animated.timing(downOpacity, {
         toValue: 0,
-        duration: 200,
+        duration: 280,
+        easing: Easing.bezier(0.4, 0, 0.6, 1),
         useNativeDriver: true,
       }),
       Animated.timing(downTranslate, {
         toValue: -SCREEN_HEIGHT_LOCAL,
-        duration: 240,
-        easing: Easing.in(Easing.cubic),
+        duration: 320,
+        easing: Easing.bezier(0.4, 0, 0.2, 1),
         useNativeDriver: true,
       }),
     ]).start(({ finished }) => {
@@ -104,9 +134,10 @@ export default function App() {
   const showOverlay = React.useCallback(() => {
     if (overlayVisible.current) return;
     overlayVisible.current = true;
-    Animated.timing(overlayOpacity, {
+    Animated.spring(overlayOpacity, {
       toValue: 1,
-      duration: 220,
+      friction: 8,
+      tension: 40,
       useNativeDriver: true,
     }).start();
   }, [overlayOpacity]);
@@ -116,7 +147,8 @@ export default function App() {
     overlayVisible.current = false;
     Animated.timing(overlayOpacity, {
       toValue: 0,
-      duration: 220,
+      duration: 250,
+      easing: Easing.bezier(0.4, 0, 0.6, 1),
       useNativeDriver: true,
     }).start();
   }, [overlayOpacity]);
@@ -180,6 +212,17 @@ export default function App() {
     }
   };
 
+  // サウンドボリューム変更
+  const handleVolumeChange = (soundId, value) => {
+    setSoundVolumes((prev) => ({ ...prev, [soundId]: value }));
+  };
+
+  // フィルタリングされたサウンド
+  const filteredSounds = React.useMemo(() => {
+    if (selectedCategory === 'すべて') return SOUNDS;
+    return SOUNDS.filter((sound) => sound.category === selectedCategory);
+  }, [selectedCategory]);
+
   return (
     <View style={styles.container} {...pan.panHandlers}>
       <Video
@@ -200,15 +243,15 @@ export default function App() {
         {/* 画面全体のグラデーション影 */}
         <LinearGradient
           pointerEvents="none"
-          colors={['rgba(0,0,0,0.0)', 'rgba(0,0,0,0.20)', 'rgba(0,0,0,0.20)', 'rgba(0,0,0,0.0)']}
-          locations={[0, 0.58, 0.78, 1]}
+          colors={['rgba(0,0,0,0.0)', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.0)']}
+          locations={[0, 0.5, 0.75, 1]}
           style={styles.overlayGradient}
         />
 
         {/* アイコン行用の下部影 */}
         <LinearGradient
           pointerEvents="none"
-          colors={['rgba(0,0,0,0.18)', 'rgba(0,0,0,0.0)']}
+          colors={['rgba(0,0,0,0.35)', 'rgba(0,0,0,0.0)']}
           locations={[0, 1]}
           style={styles.bottomShadow}
         />
@@ -246,28 +289,111 @@ export default function App() {
       </Animated.View>
       {downVisible && (
         <Animated.View style={[styles.downOverlay, { opacity: downOpacity, transform: [{ translateY: downTranslate }] }]}>
-          <LinearGradient pointerEvents="none" colors={['rgba(0,0,0,0.65)', 'rgba(0,0,0,0.45)']} locations={[0, 1]} style={StyleSheet.absoluteFillObject} />
-          <View style={styles.downHeader}>
-            <Text style={styles.downTitle}>サウンドミキサー</Text>
-            <TouchableOpacity style={styles.downClose} onPress={hideDownScreen}>
-              <Ionicons name="close" size={20} color="#fff" />
-            </TouchableOpacity>
+          <LinearGradient
+            pointerEvents="none"
+            colors={['#0f1419', '#1a2332', '#0d1520']}
+            locations={[0, 0.5, 1]}
+            style={StyleSheet.absoluteFillObject}
+          />
+
+          {/* ヘッダー */}
+          <View style={styles.mixerHeader}>
+            <View style={styles.mixerHeaderContent}>
+              <Text style={styles.mixerTitle}>サウンドミキサー</Text>
+              <TouchableOpacity style={styles.mixerClose} onPress={hideDownScreen}>
+                <Ionicons name="close-outline" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            {/* カテゴリフィルター */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoryScroll}
+              contentContainerStyle={styles.categoryScrollContent}
+            >
+              {CATEGORIES.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[
+                    styles.categoryChip,
+                    selectedCategory === cat && styles.categoryChipActive,
+                  ]}
+                  onPress={() => setSelectedCategory(cat)}
+                >
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      selectedCategory === cat && styles.categoryChipTextActive,
+                    ]}
+                  >
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
+
+          {/* サウンドグリッド */}
+          <ScrollView
+            style={styles.soundScrollView}
+            contentContainerStyle={styles.soundGrid}
+            showsVerticalScrollIndicator={false}
+          >
+            {filteredSounds.map((sound) => {
+              const volume = soundVolumes[sound.id];
+              const isActive = volume > 0;
+
+              return (
+                <View key={sound.id} style={styles.soundCard}>
+                  <LinearGradient
+                    colors={
+                      isActive
+                        ? [sound.color + '40', sound.color + '20']
+                        : ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.04)']
+                    }
+                    style={styles.soundCardGradient}
+                  >
+                    {/* アイコンとタイトル */}
+                    <View style={styles.soundCardHeader}>
+                      <Text style={styles.soundIcon}>{sound.icon}</Text>
+                      <Text style={styles.soundName}>{sound.name}</Text>
+                    </View>
+
+                    {/* ボリュームスライダー */}
+                    <View style={styles.soundCardSlider}>
+                      <Slider
+                        style={styles.slider}
+                        minimumValue={0}
+                        maximumValue={100}
+                        value={volume}
+                        onValueChange={(value) => handleVolumeChange(sound.id, value)}
+                        minimumTrackTintColor={sound.color}
+                        maximumTrackTintColor="rgba(255,255,255,0.2)"
+                        thumbTintColor={isActive ? sound.color : '#fff'}
+                      />
+                      <Text style={styles.volumeText}>{Math.round(volume)}%</Text>
+                    </View>
+                  </LinearGradient>
+                </View>
+              );
+            })}
+          </ScrollView>
         </Animated.View>
       )}
       {timerVisible && (
         <Animated.View style={[styles.timerOverlayWrap, { opacity: timerOpacity }]}>
           <LinearGradient
             pointerEvents="none"
-            colors={['rgba(0,0,0,0.48)', 'rgba(0,0,0,0.28)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.0)']}
-            locations={[0, 0.50, 0.92, 1]}
+            colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.0)']}
+            locations={[0, 0.45, 0.88, 1]}
             style={styles.timerOverlayGradient}
           />
           {/* タイマー用ボトム帯グラデーション（影帯） */}
           <LinearGradient
             pointerEvents="none"
-            colors={['rgba(0,0,0,0.0)', 'rgba(0,0,0,0.12)', 'rgba(0,0,0,0.12)', 'rgba(0,0,0,0.0)']}
-            locations={[0, 0.2, 0.8, 1]}
+            colors={['rgba(0,0,0,0.0)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.0)']}
+            locations={[0, 0.15, 0.85, 1]}
             style={styles.timerBottomBand}
           />
 
@@ -324,14 +450,15 @@ const styles = StyleSheet.create({
   },
   brand: {
     position: 'absolute',
-    top: 16,
-    left: 16,
+    top: 50,
+    left: 24,
     color: '#fff',
-    fontWeight: '600',
-    letterSpacing: 1,
-    textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: 2,
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   overlayWrap: {
     ...StyleSheet.absoluteFillObject,
@@ -342,32 +469,112 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 25,
   },
-  downHeader: {
-    position: 'absolute',
-    top: 74,
-    left: 24,
-    right: 24,
-    alignItems: 'center',
+  // サウンドミキサーヘッダー
+  mixerHeader: {
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
   },
-  downTitle: {
+  mixerHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  mixerTitle: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  mixerClose: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  // カテゴリフィルター
+  categoryScroll: {
+    marginTop: 8,
+  },
+  categoryScrollContent: {
+    paddingRight: 24,
+  },
+  categoryChip: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    marginRight: 12,
+  },
+  categoryChipActive: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  categoryChipText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  categoryChipTextActive: {
+    color: '#fff',
+  },
+  // サウンドグリッド
+  soundScrollView: {
+    flex: 1,
+    marginTop: 20,
+  },
+  soundGrid: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  soundCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  soundCardGradient: {
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  soundCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  soundIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  soundName: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
-    opacity: 0.95,
-    textAlign: 'center',
+    letterSpacing: 0.3,
   },
-  downClose: {
-    position: 'absolute',
-    right: 0,
-    top: -2,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  soundCardSlider: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    gap: 12,
+  },
+  slider: {
+    flex: 1,
+    height: 40,
+  },
+  volumeText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+    fontWeight: '600',
+    minWidth: 45,
+    textAlign: 'right',
   },
   overlayGradient: {
     position: 'absolute',
@@ -393,26 +600,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   playButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     marginHorizontal: 24,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   sideButton: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     marginHorizontal: 20,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   bottomRow: {
     position: 'absolute',
@@ -424,14 +641,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   smallCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   timerOverlayWrap: {
     ...StyleSheet.absoluteFillObject,
@@ -477,14 +699,14 @@ const styles = StyleSheet.create({
       position: 'absolute',
       right: 24,
       bottom: TIMER_TITLE_BOTTOM,
-      width: 28,
-      height: 28,
-      borderRadius: 14,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'rgba(255,255,255,0.10)',
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.12)',
+      backgroundColor: 'rgba(255,255,255,0.15)',
+      borderWidth: 1.5,
+      borderColor: 'rgba(255,255,255,0.2)',
     },
    timerIconsRowOverlay: {
       position: 'absolute',
@@ -536,14 +758,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   timerIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   clockWrap: {
     position: 'absolute',
@@ -554,16 +776,16 @@ const styles = StyleSheet.create({
   },
   bigClock: {
     color: '#fff',
-    fontSize: 60,
-    letterSpacing: 2,
-    fontWeight: '300',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
+    fontSize: 72,
+    letterSpacing: 4,
+    fontWeight: '200',
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 10,
   },
   iconShadow: {
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 8,
   },
 });
